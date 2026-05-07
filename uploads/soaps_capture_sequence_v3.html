@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S.O.A.P.S. Capture Sequence — Delta Infinite</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070c18;color:#c8d0e0;font-family:'Courier New',monospace;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:2rem 1rem;}
+.wrap{width:100%;max-width:700px;}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.logo{font-size:11px;letter-spacing:.18em;color:#4a9eff;opacity:.7;}
+.seq-row{display:flex;justify-content:space-between;align-items:center;max-width:660px;margin-bottom:8px;}
+.dots{display:flex;gap:6px;align-items:center;}
+.dot-lbl{font-size:9px;color:rgba(200,208,224,0.4);letter-spacing:.1em;margin-right:2px;}
+.sdot{width:8px;height:8px;border-radius:50%;background:rgba(200,208,224,0.18);display:inline-block;transition:background .3s;}
+.sdot.a{background:#4a9eff;}.sdot.d{background:rgba(200,208,224,0.35);}
+.ov-label{font-size:10px;color:rgba(200,208,224,0.55);letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.ov-label input{cursor:pointer;}
+canvas{display:block;border-radius:6px;width:100%;border:1px solid rgba(74,158,255,0.12);}
+.tl{font-size:11px;color:#4a9eff;letter-spacing:.06em;margin:8px 0 4px;min-height:16px;}
+.pl{font-size:10px;letter-spacing:.12em;color:rgba(200,208,224,0.55);margin:10px 0 3px;}
+.pd{font-size:13px;color:rgba(200,208,224,0.88);line-height:1.65;min-height:80px;max-width:660px;}
+.ctrl{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+button{background:transparent;border:0.5px solid rgba(74,158,255,0.4);color:#88c4ff;font-family:'Courier New',monospace;font-size:11px;letter-spacing:.08em;padding:6px 14px;border-radius:4px;cursor:pointer;transition:background .15s;}
+button:hover{background:rgba(74,158,255,0.12);}
+button:disabled{opacity:.3;cursor:not-allowed;}
+.badge{font-size:9px;letter-spacing:.1em;color:rgba(200,208,224,0.3);margin-top:16px;border-top:0.5px solid rgba(74,158,255,0.1);padding-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <span class="logo">DELTA INFINITE  ·  CAPTURE-FIRST SPACE INFRASTRUCTURE</span>
+  </div>
+  <div class="seq-row">
+    <div class="dots">
+      <span class="dot-lbl">SEQ</span>
+      <span class="sdot a" id="d0"></span><span class="sdot" id="d1"></span>
+      <span class="sdot" id="d2"></span><span class="sdot" id="d3"></span><span class="sdot" id="d4"></span>
+    </div>
+    <label class="ov-label"><input type="checkbox" id="ov"> TECH OVERLAY</label>
+  </div>
+  <canvas id="sc" width="660" height="370"></canvas>
+  <div class="tl" id="tl"></div>
+  <div class="pl" id="pl"></div>
+  <div class="pd" id="pd"></div>
+  <div class="ctrl">
+    <button id="pb" onclick="go(-1)">← PREV</button>
+    <button id="nb" onclick="go(1)">NEXT →</button>
+    <button onclick="rst()">↺ RESTART</button>
+  </div>
+  <div class="badge">S.O.A.P.S. CAPTURE SEQUENCE  ·  DELTA INFINITE  ·  TRL-3 CONCEPT DEMONSTRATION  ·  NON-PROPRIETARY</div>
+</div>
+<script>
+const cv=document.getElementById('sc');
+const cx=cv.getContext('2d');
+const W=660,H=370,HH=H/2;
+
+const PH=[
+  {l:'PHASE 1 — DETECTION & CHARACTERIZATION',
+   d:'Servicer holds at 500m standoff range. Active sensor sweep characterizes target geometry, rotation rate, and inertia state. The object tumbles freely — no cooperative response, unknown mass distribution, no docking fixtures, no communication link. This is the hardest class of orbital object.',
+   t:()=>`RANGE: 500 m  |  CLOSURE: 2.3 m/s  |  TARGET ROT: ${rr.toFixed(1)} °/s`},
+  {l:'PHASE 2 — PROXIMITY APPROACH',
+   d:'Servicer closes on a curved, passively safe intercept trajectory. Relative navigation sensors refine the 6-DOF state estimate. The debris continues tumbling at full rate. Traditional capture methods require rotation matching or target stabilization — S.O.A.P.S. does not.',
+   t:()=>`RANGE: ${Math.max(12,Math.round(500-(sx-90)/(270-90)*488))} m  |  CLOSURE: 1.8 m/s  |  TARGET ROT: ${rr.toFixed(1)} °/s`},
+  {l:'PHASE 3 — FOAM DEPLOYMENT',
+   d:'Foam is ejected from the servicer nozzle and expands around the target. The viscoelastic matrix conforms to the irregular geometry regardless of spin state or surface material. As the foam cures, rotational energy is progressively absorbed and damped.',
+   t:()=>`RANGE: 12 m  |  FOAM EXP: ${Math.round(fe*100)}%  |  TARGET ROT: ${rr.toFixed(1)} °/s`},
+  {l:'PHASE 4 — STABILIZATION COMPLETE',
+   d:'Foam has cured and solidified. Target rotation reduced to near-zero. Servicer and target are now mechanically coupled through the foam matrix. The captured mass is controllable — ready for repositioning, deorbit, or handoff to a receiving vehicle.',
+   t:()=>`RANGE: 12 m  |  CLOSURE: 0.0 m/s  |  TARGET ROT: 0.3 °/s  |  STATUS: STABILIZED`},
+  {l:'PHASE 5 — CONTROLLED OBJECT',
+   d:'Servicer initiates departure burn with the foam-encapsulated target in tow. From uncontrolled debris to infrastructure asset — this is the capture-first value creation event. The object is now economically different from what it was four minutes ago.',
+   t:()=>`STATUS: CONTROLLED DEPARTURE  |  TARGET ROT: 0.3 °/s  |  OBJECT: MASS CONTROLLED`}
+];
+
+let p=0,da=0,rr=18.2,fe=0,sa=0,sx=90,sy=HH,dx=0,tm=0,lt=Date.now(),ov=false;
+let scanAngle=0,scanData=[],zoom=1,zoomTx=0,zoomTy=0,targetZoom=1,targetTx=0,targetTy=0;
+
+const SCAN_HITS=[
+  {a:0.45,label:'ROT RATE: 18.2 °/s'},
+  {a:1.05,label:'EST MASS: ~820 kg'},
+  {a:1.75,label:'GEOMETRY: IRREGULAR'},
+  {a:2.50,label:'SURFACE: PASSIVE'},
+  {a:3.30,label:'SPIN AXIS: UNDEFINED'},
+  {a:4.10,label:'DOCKING FIXTURE: NONE'},
+];
+
+const ST=[90,270,355,355,355];
+const DBX=430,DBY=HH;
+
+const stars=Array.from({length:100},()=>({
+  x:Math.random()*W,y:Math.random()*H,
+  r:Math.random()*1.4+0.2,a:Math.random()*0.55+0.35
+}));
+
+const FBLOB=[
+  {r:56,a:0},{r:44,a:0.63},{r:40,a:1.26},{r:46,a:1.88},
+  {r:54,a:2.51},{r:42,a:3.14},{r:38,a:3.77},{r:48,a:4.40},
+  {r:58,a:5.03},{r:50,a:5.65}
+];
+
+function blobPath(cx2,x,y,pts,scale,t,cured){
+  const n=pts.length;
+  const exp=pts.map((pt,i)=>{
+    const w=cured?0:Math.sin(t*2.1+i*1.3)*0.05*scale;
+    return{x:Math.cos(pt.a)*(pt.r+w)*scale+x,y:Math.sin(pt.a)*(pt.r+w)*scale+y};
+  });
+  cx2.beginPath();cx2.moveTo(exp[0].x,exp[0].y);
+  for(let i=0;i<n;i++){
+    const cur=exp[i],nxt=exp[(i+1)%n],prv=exp[(i+n-1)%n],nn=exp[(i+2)%n];
+    const cp1x=cur.x+(nxt.x-prv.x)*0.22,cp1y=cur.y+(nxt.y-prv.y)*0.22;
+    const cp2x=nxt.x-(nn.x-cur.x)*0.22,cp2y=nxt.y-(nn.y-cur.y)*0.22;
+    cx2.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,nxt.x,nxt.y);
+  }
+  cx2.closePath();
+}
+
+function drawSat(cx2,x,y,angle){
+  cx2.save();cx2.translate(x,y);cx2.rotate(angle);
+  cx2.strokeStyle='#909ab0';cx2.lineWidth=1.8;
+  cx2.beginPath();cx2.moveTo(-18,0);cx2.lineTo(-28,0);cx2.stroke();
+  cx2.beginPath();cx2.moveTo(18,0);cx2.lineTo(28,0);cx2.stroke();
+  cx2.fillStyle='#152248';cx2.fillRect(-62,-9,34,18);
+  cx2.strokeStyle='#3060a0';cx2.lineWidth=0.5;cx2.strokeRect(-62,-9,34,18);
+  cx2.strokeStyle='#264488';cx2.lineWidth=0.6;
+  for(let i=0;i<3;i++){cx2.strokeRect(-62+i*11.3,-9,11.3,18);cx2.beginPath();cx2.moveTo(-62+i*11.3,0);cx2.lineTo(-62+(i+1)*11.3,0);cx2.stroke();}
+  cx2.fillStyle='#152248';cx2.fillRect(28,-9,34,18);
+  cx2.strokeStyle='#3060a0';cx2.lineWidth=0.5;cx2.strokeRect(28,-9,34,18);
+  cx2.strokeStyle='#264488';cx2.lineWidth=0.6;
+  for(let i=0;i<3;i++){cx2.strokeRect(28+i*11.3,-9,11.3,18);cx2.beginPath();cx2.moveTo(28+i*11.3,0);cx2.lineTo(28+(i+1)*11.3,0);cx2.stroke();}
+  cx2.fillStyle='#686e7a';cx2.fillRect(-18,-15,36,30);
+  cx2.fillStyle='rgba(210,178,88,0.28)';
+  for(let i=-15;i<15;i+=5)cx2.fillRect(-18,i,36,2.8);
+  cx2.strokeStyle='#8a929e';cx2.lineWidth=1;cx2.strokeRect(-18,-15,36,30);
+  cx2.strokeStyle='#50565e';cx2.lineWidth=0.5;
+  cx2.beginPath();cx2.moveTo(0,-15);cx2.lineTo(0,15);cx2.moveTo(-9,-15);cx2.lineTo(-9,15);cx2.moveTo(9,-15);cx2.lineTo(9,15);cx2.stroke();
+  cx2.fillStyle='#bcc8d0';cx2.beginPath();cx2.ellipse(5,-22,9,5,-0.15,0,Math.PI*2);cx2.fill();
+  cx2.strokeStyle='#8898a8';cx2.lineWidth=0.8;cx2.stroke();
+  cx2.strokeStyle='#909ab0';cx2.lineWidth=1;cx2.beginPath();cx2.moveTo(5,-15);cx2.lineTo(5,-17);cx2.stroke();
+  cx2.strokeStyle='#8898a8';cx2.lineWidth=0.4;
+  cx2.beginPath();cx2.moveTo(5,-22);cx2.lineTo(-4,-22);cx2.moveTo(5,-22);cx2.lineTo(14,-22);cx2.moveTo(5,-22);cx2.lineTo(5,-27);cx2.stroke();
+  cx2.fillStyle='#323840';
+  [[-20,-17],[-20,13],[16,-17],[16,13]].forEach(([tx,ty])=>cx2.fillRect(tx,ty,4,4));
+  cx2.fillStyle='#1c2430';cx2.fillRect(-17,-17,10,4);
+  cx2.fillStyle='#2a508a';cx2.fillRect(-15,-16,6,2);
+  cx2.restore();
+}
+
+function drawServicer(cx2,x,y){
+  cx2.save();cx2.translate(x,y);
+  cx2.fillStyle='#1a3a5a';cx2.fillRect(-6,-24,12,10);cx2.fillRect(-6,14,12,10);
+  cx2.fillStyle='#2a5fa0';cx2.fillRect(-16,-10,38,20);
+  cx2.fillStyle='#1e55aa';cx2.fillRect(-12,-7,14,14);
+  cx2.fillStyle='#4488cc';cx2.strokeStyle='#88c4ff';cx2.lineWidth=0.5;cx2.strokeRect(-12,-7,14,14);
+  cx2.fillStyle='#88c4ff';cx2.beginPath();cx2.arc(22,0,3,0,Math.PI*2);cx2.fill();
+  cx2.strokeStyle='#aad4ff';cx2.lineWidth=1;
+  cx2.beginPath();cx2.moveTo(22,0);cx2.lineTo(26,-2);cx2.lineTo(26,2);cx2.closePath();cx2.stroke();
+  cx2.restore();
+}
+
+function upd(){
+  const now=Date.now(),dt=Math.min((now-lt)/1000,0.05);
+  lt=now;tm+=dt;
+  const tx=ST[p]+(p===4?dx:0);
+  sx+=(tx-sx)*dt*3;
+  if(p===2)rr=Math.max(3,rr-dt*13);
+  else if(p<=1)rr=18.2;
+  else if(p>=3)rr=0.3;
+  da+=rr*dt;
+  if(p===0){
+    scanAngle+=dt*1.4;
+    SCAN_HITS.forEach(h=>{if(scanAngle>h.a&&!h.revealed){h.revealed=true;scanData.push(h.label);}});
+  }
+  if(p===2)fe=Math.min(1,fe+dt*0.38);
+  if(p===4){
+    dx=Math.min(130,dx+dt*20);
+    targetZoom=0.62;targetTx=137-dx;targetTy=0;
+  } else {targetZoom=1;targetTx=0;targetTy=0;}
+  zoom+=(targetZoom-zoom)*dt*2.5;
+  zoomTx+=(targetTx-zoomTx)*dt*2.5;
+  zoomTy+=(targetTy-zoomTy)*dt*2.5;
+  sa+=dt*95;
+}
+
+function drw(){
+  cx.fillStyle='#070c18';cx.fillRect(0,0,W,H);
+  stars.forEach(s=>{cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fillStyle=`rgba(255,255,255,${s.a})`;cx.fill();});
+  cx.save();cx.scale(zoom,zoom);cx.translate(zoomTx,zoomTy);
+  cx.save();cx.globalAlpha=0.07;cx.strokeStyle='#4a9eff';cx.lineWidth=0.5;
+  cx.beginPath();cx.ellipse(W/2,H/2+28,268,78,0,0,Math.PI*2);cx.stroke();cx.restore();
+  const dbx=DBX+(p===4?dx:0),dby=DBY;
+  if(p===1){
+    cx.save();cx.strokeStyle='#4a9eff';cx.lineWidth=1;cx.globalAlpha=0.28;cx.setLineDash([4,7]);
+    cx.beginPath();cx.moveTo(sx,sy);cx.quadraticCurveTo((sx+dbx)/2,HH-44,dbx-85,dby);
+    cx.stroke();cx.setLineDash([]);cx.restore();
+  }
+  if(p===0){
+    const ba=Math.atan2(dby-sy,dbx-sx);
+    const sweep=Math.min(scanAngle,Math.PI*1.8);
+    const dist=dbx-sx-30;
+    cx.save();
+    cx.globalAlpha=0.14;cx.fillStyle='#4a9eff';
+    cx.beginPath();cx.moveTo(sx+20,sy);cx.arc(sx+20,sy,dist,ba-sweep*0.45,ba-sweep*0.45+sweep);cx.closePath();cx.fill();
+    cx.globalAlpha=0.65;cx.strokeStyle='#88c4ff';cx.lineWidth=1.2;
+    cx.beginPath();cx.moveTo(sx+20,sy);
+    const ea=ba-sweep*0.45+sweep;
+    cx.lineTo(sx+20+Math.cos(ea)*dist,sy+Math.sin(ea)*dist);cx.stroke();
+    cx.globalAlpha=0.1;cx.strokeStyle='#4a9eff';cx.lineWidth=0.5;
+    [0.35,0.65,1].forEach(f=>{cx.beginPath();cx.arc(sx+20,sy,dist*f,ba-0.5,ba+0.5);cx.stroke();});
+    cx.restore();
+  }
+  if(fe>0){
+    const cured=p>=3;
+    cx.save();cx.globalAlpha=cured?0.93:0.75;
+    const grad=cx.createRadialGradient(dbx,dby,0,dbx,dby,58*fe);
+    if(cured){grad.addColorStop(0,'#a06810');grad.addColorStop(1,'#7a4e08');}
+    else{grad.addColorStop(0,'#f5c040');grad.addColorStop(0.6,'#e8960a');grad.addColorStop(1,'#c07008');}
+    cx.fillStyle=grad;
+    blobPath(cx,dbx,dby,FBLOB,fe,tm,cured);cx.fill();
+    if(!cured){
+      cx.globalAlpha=0.22;cx.fillStyle='#ffe080';
+      blobPath(cx,dbx,dby,FBLOB,fe*0.62,tm+0.5,false);cx.fill();
+      cx.globalAlpha=0.35;cx.strokeStyle='#ffd060';cx.lineWidth=1.5;
+      blobPath(cx,dbx,dby,FBLOB,fe,tm,false);cx.stroke();
+    } else {
+      cx.globalAlpha=0.15;cx.strokeStyle='#c08030';cx.lineWidth=2;
+      blobPath(cx,dbx,dby,FBLOB,fe,tm,true);cx.stroke();
+    }
+    cx.restore();
+    if(ov&&fe>0.3){
+      cx.save();cx.globalAlpha=0.85;cx.fillStyle=cured?'#d4920a':'#f5a820';cx.font='9px monospace';
+      cx.fillText(cured?'CURE BOUNDARY':'FOAM EXPANSION FRONT',dbx+64,dby-8);
+      if(!cured)cx.fillText('6-DOF STABILIZATION ZONE',dbx+64,dby+6);
+      cx.restore();
+    }
+  }
+  drawSat(cx,dbx,dby,da*Math.PI/180);
+  if(ov&&p<=2){
+    cx.save();cx.globalAlpha=0.75;cx.fillStyle='rgba(150,160,180,0.85)';cx.font='9px monospace';
+    cx.fillText('NON-COOPERATIVE TARGET',dbx-38,dby+72);
+    cx.fillText('DEFUNCT SATELLITE  · NO COMM',dbx-38,dby+83);cx.restore();
+  }
+  if(p>=3){
+    cx.save();cx.strokeStyle='#40c870';cx.lineWidth=1.5;cx.globalAlpha=0.45;cx.setLineDash([3,5]);
+    cx.beginPath();cx.moveTo(sx+22,sy);cx.lineTo(dbx,dby);cx.stroke();cx.setLineDash([]);cx.restore();
+    if(ov){cx.save();cx.fillStyle='#40c870';cx.globalAlpha=0.85;cx.font='9px monospace';cx.fillText('MECHANICAL COUPLE',sx+28,sy-16);cx.restore();}
+  }
+  drawServicer(cx,sx,sy);
+  if(p===4){
+    const pl=22+Math.sin(tm*14)*4;
+    cx.save();
+    cx.globalAlpha=0.62;cx.fillStyle='#88d4ff';
+    cx.beginPath();cx.moveTo(sx-16,sy);
+    cx.lineTo(sx-16-pl,sy-7+Math.sin(tm*11)*1.5);cx.lineTo(sx-16-pl,sy+7+Math.sin(tm*11+1)*1.5);
+    cx.closePath();cx.fill();
+    cx.globalAlpha=0.40;cx.fillStyle='#ff9944';
+    cx.beginPath();cx.moveTo(sx-16,sy);cx.lineTo(sx-16-pl*0.5,sy-3.5);cx.lineTo(sx-16-pl*0.5,sy+3.5);
+    cx.closePath();cx.fill();
+    cx.globalAlpha=0.18;cx.strokeStyle='#4a9eff';cx.lineWidth=0.8;cx.setLineDash([4,7]);
+    cx.beginPath();cx.moveTo(dbx,dby);cx.quadraticCurveTo(dbx+80,dby-18,dbx+155,dby-34);
+    cx.stroke();cx.setLineDash([]);cx.restore();
+    cx.save();cx.globalAlpha=0.92;
+    cx.fillStyle='#40e880';cx.font='bold 11px monospace';
+    cx.fillText('MASS: CONTROLLED',dbx-44,dby-70);
+    cx.fillStyle='rgba(64,232,128,0.14)';cx.fillRect(dbx-50,dby-84,168,18);cx.restore();
+    if(ov){cx.save();cx.globalAlpha=0.7;cx.fillStyle='#4a9eff';cx.font='9px monospace';cx.fillText('CONTROLLED DEPARTURE →',dbx+8,dby-38);cx.restore();}
+  }
+  cx.save();cx.globalAlpha=0.04;cx.strokeStyle='#4a9eff';cx.lineWidth=0.5;
+  for(let gx=0;gx<W;gx+=66){cx.beginPath();cx.moveTo(gx,0);cx.lineTo(gx,H);cx.stroke();}
+  for(let gy=0;gy<H;gy+=66){cx.beginPath();cx.moveTo(0,gy);cx.lineTo(W,gy);cx.stroke();}
+  cx.restore();
+  cx.restore();
+  cx.fillStyle='rgba(74,158,255,0.13)';cx.fillRect(10,10,202,22);
+  cx.fillStyle='#4a9eff';cx.font='9px monospace';
+  cx.fillText(`PHASE ${p+1}/5  · ${['DETECT','APPROACH','DEPLOY','STABILIZE','CONTROLLED'][p]}`,16,24);
+  if(p===4){
+    const zp=Math.round((1-zoom)*100);
+    cx.fillStyle='rgba(74,158,255,0.1)';cx.fillRect(W-140,10,130,22);
+    cx.fillStyle='#4a9eff';cx.font='9px monospace';
+    cx.fillText(`VIEW: -${zp}% ZOOM`,W-135,24);
+  }
+  if(p===0&&scanData.length>0){
+    const lh=13,pw=196,ph=16+scanData.length*lh+4;
+    const px=10,py=H-10-ph;
+    cx.fillStyle='rgba(6,14,28,0.92)';cx.fillRect(px,py,pw,ph);
+    cx.strokeStyle='#2a5a8a';cx.lineWidth=0.5;cx.strokeRect(px,py,pw,ph);
+    cx.fillStyle='#4a9eff';cx.font='8px monospace';cx.fillText('◈ SENSOR READOUT',px+6,py+11);
+    cx.strokeStyle='#2a5a8a';cx.lineWidth=0.3;cx.beginPath();cx.moveTo(px,py+14);cx.lineTo(px+pw,py+14);cx.stroke();
+    cx.fillStyle='#88c4ff';cx.font='8px monospace';
+    scanData.forEach((line,i)=>cx.fillText(`› ${line}`,px+6,py+26+i*lh));
+  }
+}
+
+function loop(){upd();drw();requestAnimationFrame(loop);}
+
+function uiUpd(){
+  for(let i=0;i<5;i++)document.getElementById('d'+i).className='sdot'+(i===p?' a':i<p?' d':'');
+  document.getElementById('pl').textContent=PH[p].l;
+  document.getElementById('pd').textContent=PH[p].d;
+  document.getElementById('pb').disabled=p===0;
+  document.getElementById('nb').disabled=p===4;
+}
+
+function tlUpd(){document.getElementById('tl').textContent=PH[p].t();setTimeout(tlUpd,220);}
+
+function go(d){
+  const np=p+d;if(np<0||np>4)return;p=np;
+  if(p<=2){fe=0;rr=18.2;}else{fe=1;rr=0.3;}
+  if(p!==4){dx=0;targetZoom=1;targetTx=0;targetTy=0;}
+  if(p===0){SCAN_HITS.forEach(h=>delete h.revealed);scanData.length=0;scanAngle=0;}
+  uiUpd();
+}
+
+function rst(){
+  p=0;fe=0;rr=18.2;da=0;dx=0;sx=90;scanAngle=0;scanData.length=0;
+  zoom=1;zoomTx=0;zoomTy=0;targetZoom=1;targetTx=0;targetTy=0;
+  SCAN_HITS.forEach(h=>delete h.revealed);uiUpd();
+}
+
+document.getElementById('ov').addEventListener('change',e=>ov=e.target.checked);
+uiUpd();tlUpd();loop();
+</script>
+</body>
+</html>
