@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Delta Infinite — Capture-First Space Infrastructure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..500;1,9..144,300..500&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<template id="__bundler_thumbnail" data-bg-color="#0a0e1a">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#0a0e1a"/>
+    <g transform="translate(600 420)" fill="none" stroke="#e8ecf2" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M -160 120 L 0 -160 L 160 120 Z"/>
+      <g transform="translate(60 -100)">
+        <ellipse cx="-16" cy="0" rx="20" ry="17" stroke-width="8"/>
+        <ellipse cx="16" cy="0" rx="20" ry="17" stroke-width="8"/>
+      </g>
+    </g>
+    <text x="600" y="640" text-anchor="middle" fill="#8b95a5" font-family="monospace" font-size="22" letter-spacing="6">DELTA INFINITE</text>
+    <text x="600" y="676" text-anchor="middle" fill="#5a6373" font-family="monospace" font-size="14" letter-spacing="4">CAPTURE-FIRST · LOADING</text>
+  </svg>
+</template>
+<style>
+:root{
+  --bg:#0a0e1a;
+  --bg2:#0f1319;
+  --line:#1d2530;
+  --fg:#e8ecf2;
+  --dim:#8b95a5;
+  --faint:#5a6373;
+  --orange:#e07a5f;
+  --cyan:#6ab0c4;
+  --brass:#c9a96e;
+  --maxw:1280px;
+  --pad:clamp(20px,5vw,72px);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg);color:var(--fg);font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:400;-webkit-font-smoothing:antialiased;line-height:1.55;}
+body{font-size:14px;}
+img{display:block;max-width:100%;}
+a{color:inherit;text-decoration:none;}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
+
+/* layout */
+section{border-top:1px solid var(--line);}
+section:first-of-type{border-top:none;}
+.container{max-width:var(--maxw);margin:0 auto;padding:clamp(64px,9vw,140px) var(--pad);}
+
+/* type */
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;letter-spacing:0.28em;text-transform:uppercase;color:var(--faint);margin-bottom:32px;display:flex;align-items:center;gap:14px;}
+.eyebrow::before{content:"";display:inline-block;width:24px;height:1px;background:var(--faint);}
+.eyebrow.accent{color:var(--orange);}
+.eyebrow.accent::before{background:var(--orange);}
+.eyebrow.cyan{color:var(--cyan);}
+.eyebrow.cyan::before{background:var(--cyan);}
+.eyebrow.brass{color:var(--brass);}
+.eyebrow.brass::before{background:var(--brass);}
+
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:300;letter-spacing:-0.01em;line-height:1.05;color:var(--fg);font-variation-settings:"opsz" 144;}
+h1{font-size:clamp(40px,6.4vw,88px);}
+h2{font-size:clamp(32px,4.4vw,60px);line-height:1.08;letter-spacing:-0.015em;}
+h3{font-size:clamp(20px,2vw,28px);line-height:1.2;}
+em{font-style:italic;font-variation-settings:"opsz" 144;}
+.italic-cyan{font-style:italic;color:var(--cyan);font-variation-settings:"opsz" 144;}
+.italic-orange{font-style:italic;color:var(--orange);font-variation-settings:"opsz" 144;}
+
+p.lede{color:var(--dim);font-size:15px;max-width:62ch;line-height:1.7;}
+p.body{color:var(--dim);font-size:14px;max-width:62ch;line-height:1.75;}
+p.body strong{color:var(--fg);font-weight:500;}
+
+.mono-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--faint);}
+.dim{color:var(--dim);}
+.faint{color:var(--faint);}
+
+/* hero */
+.hero{min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+.hero::before{
+  content:"";position:absolute;inset:0;
+  background-image:
+    linear-gradient(to right,rgba(29,37,48,0.5) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(29,37,48,0.5) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 90%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 90%);
+  pointer-events:none;
+}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;padding:28px var(--pad);position:relative;z-index:2;gap:24px;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{width:22px;height:22px;}
+.brand-name{font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:var(--fg);}
+.telemetry{display:flex;gap:28px;flex-wrap:wrap;justify-content:flex-end;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--dim);}
+.telemetry .k{color:var(--faint);}
+.telemetry .v{color:var(--fg);}
+.telemetry .v.orange{color:var(--orange);}
+.telemetry .v.cyan{color:var(--cyan);}
+.telemetry .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);box-shadow:0 0 10px rgba(224,122,95,0.7);margin-right:8px;vertical-align:middle;animation:pulse 2.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+
+.hero-body{flex:1;display:flex;align-items:center;padding:0 var(--pad);position:relative;z-index:2;}
+.hero-inner{max-width:1100px;width:100%;}
+.hero h1{margin-bottom:28px;text-wrap:pretty;}
+.hero-sub{color:var(--dim);font-size:16px;letter-spacing:0;max-width:48ch;line-height:1.6;}
+.hero-foot{padding:0 var(--pad) 56px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;position:relative;z-index:2;}
+.cta{display:inline-flex;align-items:center;gap:14px;padding:14px 22px;border:1px solid var(--fg);color:var(--fg);font-size:11px;letter-spacing:0.22em;text-transform:uppercase;transition:background .15s,color .15s;}
+.cta:hover{background:var(--fg);color:var(--bg);}
+.cta .arrow{font-family:'JetBrains Mono',monospace;}
+.text-link{font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--line);padding-bottom:4px;transition:color .15s,border-color .15s;}
+.text-link:hover{color:var(--fg);border-color:var(--fg);}
+
+.scroll-hint{position:absolute;bottom:24px;right:var(--pad);font-size:10px;letter-spacing:0.22em;color:var(--faint);writing-mode:vertical-rl;transform:rotate(180deg);z-index:2;}
+
+/* problem stats */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:64px 0 56px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.stat{padding:40px 32px 36px;border-right:1px solid var(--line);}
+.stat:last-child{border-right:none;}
+.stat .num{font-family:'Fraunces',serif;font-weight:300;font-size:clamp(56px,7vw,96px);line-height:1;letter-spacing:-0.02em;color:var(--fg);font-variation-settings:"opsz" 144;margin-bottom:18px;}
+.stat .num .small{font-size:0.55em;color:var(--dim);letter-spacing:0;}
+.stat .lab{font-size:10px;letter-spacing:0.24em;text-transform:uppercase;color:var(--faint);margin-bottom:14px;}
+.stat .copy{color:var(--dim);font-size:13px;line-height:1.65;}
+.stat.zero .num{color:var(--orange);}
+
+/* capture sequence */
+.capture-frame{margin:48px 0 24px;border:1px solid var(--line);background:#070c18;padding:40px 32px;}
+.capture-host{max-width:720px;margin:0 auto;}
+.caption{margin-top:20px;font-size:12px;color:var(--dim);text-align:center;letter-spacing:0.04em;}
+
+/* video */
+.video-frame{margin:48px 0 32px;border:1px solid var(--line);background:#000;position:relative;aspect-ratio:16/9;overflow:hidden;}
+.video-frame video{width:100%;height:100%;object-fit:cover;}
+.video-meta{position:absolute;top:16px;left:16px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(232,236,242,0.85);background:rgba(10,14,26,0.6);padding:6px 10px;border:1px solid rgba(106,176,196,0.3);}
+.video-meta .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--cyan);margin-right:8px;vertical-align:middle;animation:pulse 2s ease-in-out infinite;}
+.proof-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:40px;}
+.proof-meta div{padding:18px 20px;border-right:1px solid var(--line);}
+.proof-meta div:last-child{border-right:none;}
+.proof-meta .k{font-size:9px;letter-spacing:0.24em;color:var(--faint);text-transform:uppercase;margin-bottom:6px;}
+.proof-meta .v{font-size:13px;color:var(--fg);}
+
+/* value chain */
+.chain{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin:56px 0 40px;align-items:stretch;}
+.chain .step{position:relative;padding:24px 18px 28px;border:1px solid var(--line);border-right:none;background:rgba(15,19,25,0.4);}
+.chain .step:last-child{border-right:1px solid var(--line);}
+.chain .step.highlight{border-color:var(--cyan);background:rgba(106,176,196,0.06);box-shadow:inset 0 0 0 1px rgba(106,176,196,0.25);z-index:2;}
+.chain .step .ix{font-size:10px;letter-spacing:0.22em;color:var(--faint);margin-bottom:14px;}
+.chain .step.highlight .ix{color:var(--cyan);}
+.chain .step .nm{font-family:'Fraunces',serif;font-weight:400;font-size:18px;line-height:1.2;color:var(--fg);margin-bottom:10px;font-variation-settings:"opsz" 144;}
+.chain .step.highlight .nm{color:var(--cyan);font-style:italic;}
+.chain .step .who{font-size:10px;letter-spacing:0.06em;color:var(--dim);line-height:1.5;}
+.chain .step.highlight .who{color:var(--fg);}
+.chain .step.highlight .tag{display:inline-block;margin-top:10px;font-size:9px;letter-spacing:0.22em;color:var(--cyan);border:1px solid var(--cyan);padding:3px 7px;}
+.chain-bullets{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:32px;}
+.chain-bullets .b{border-top:1px solid var(--line);padding-top:18px;}
+.chain-bullets .b .nb{font-size:10px;letter-spacing:0.24em;color:var(--orange);margin-bottom:10px;}
+.chain-bullets .b .ti{font-size:14px;color:var(--fg);line-height:1.5;margin-bottom:10px;font-weight:500;}
+.chain-bullets .b .de{font-size:12px;color:var(--dim);line-height:1.65;}
+
+/* timing cards */
+.timing{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:56px;border-top:1px solid var(--line);}
+.timing .card{padding:32px 28px 36px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);}
+.timing .card:last-child{border-right:none;}
+.timing .ix{font-family:'Fraunces',serif;font-weight:300;font-size:48px;color:var(--orange);line-height:1;margin-bottom:24px;font-variation-settings:"opsz" 144;}
+.timing .ti{font-family:'Fraunces',serif;font-weight:400;font-size:22px;line-height:1.2;color:var(--fg);margin-bottom:16px;font-variation-settings:"opsz" 144;}
+.timing .su{font-size:13px;color:var(--dim);line-height:1.6;margin-bottom:18px;}
+.timing .pts{list-style:none;padding:0;margin:0;border-top:1px solid var(--line);padding-top:14px;}
+.timing .pts li{font-size:11px;color:var(--dim);line-height:1.6;padding:6px 0;display:flex;gap:10px;}
+.timing .pts li::before{content:"›";color:var(--orange);flex:0 0 auto;}
+
+/* traction */
+.traction{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:56px;border-top:1px solid var(--line);border-left:1px solid var(--line);}
+.traction .t{padding:30px 26px 32px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-height:200px;display:flex;flex-direction:column;}
+.traction .mark{width:18px;height:18px;border:1px solid var(--cyan);position:relative;margin-bottom:20px;flex:0 0 auto;}
+.traction .mark::before,.traction .mark::after{content:"";position:absolute;background:var(--cyan);}
+.traction .mark::before{top:50%;left:3px;right:3px;height:1px;transform:translateY(-50%);}
+.traction .mark::after{left:50%;top:3px;bottom:3px;width:1px;transform:translateX(-50%);}
+.traction .t .lab{font-size:10px;letter-spacing:0.22em;color:var(--cyan);margin-bottom:14px;line-height:1.5;}
+.traction .t .st{font-size:13px;color:var(--fg);line-height:1.55;}
+.traction .t.brass .mark{border-color:var(--brass);}
+.traction .t.brass .mark::before,.traction .t.brass .mark::after{background:var(--brass);}
+.traction .t.brass .lab{color:var(--brass);}
+
+/* founder */
+.founder-grid{display:grid;grid-template-columns:5fr 6fr;gap:64px;margin-top:48px;align-items:start;}
+.founder-photo{border:1px solid var(--line);background:#0c1119;}
+.founder-photo img{width:100%;height:auto;display:block;filter:saturate(0.92) contrast(1.02);}
+.founder-photo .strip{padding:14px 18px;border-top:1px solid var(--line);font-size:10px;letter-spacing:0.22em;color:var(--faint);display:flex;justify-content:space-between;}
+.founder-photo .strip .v{color:var(--fg);}
+.founder-creds{display:flex;flex-direction:column;}
+.founder-creds .name{font-family:'Fraunces',serif;font-size:34px;font-weight:300;color:var(--fg);margin-bottom:6px;font-variation-settings:"opsz" 144;}
+.founder-creds .role{font-size:11px;letter-spacing:0.22em;color:var(--orange);margin-bottom:32px;}
+.founder-creds ul{list-style:none;padding:0;margin:0;}
+.founder-creds li{padding:18px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:48px 1fr;gap:18px;align-items:start;}
+.founder-creds li:last-child{border-bottom:1px solid var(--line);}
+.founder-creds li .ix{font-size:10px;letter-spacing:0.22em;color:var(--faint);padding-top:3px;}
+.founder-creds li .tx{font-size:14px;color:var(--fg);line-height:1.6;}
+.founder-creds li .tx .em{color:var(--dim);font-size:12px;display:block;margin-top:4px;}
+
+/* ask */
+.ask-headline{max-width:24ch;}
+.ask-headline .num{color:var(--brass);font-style:italic;font-variation-settings:"opsz" 144;}
+.ask-grid{display:grid;grid-template-columns:7fr 5fr;gap:64px;margin-top:48px;align-items:start;}
+.use-of-funds{border:1px solid var(--line);}
+.use-of-funds .uh{padding:18px 24px;border-bottom:1px solid var(--line);font-size:10px;letter-spacing:0.24em;color:var(--brass);text-transform:uppercase;}
+.use-of-funds .row{display:grid;grid-template-columns:1fr auto;padding:18px 24px;border-bottom:1px solid var(--line);align-items:baseline;gap:16px;}
+.use-of-funds .row:last-child{border-bottom:none;}
+.use-of-funds .row .lab{font-size:12px;color:var(--dim);line-height:1.5;}
+.use-of-funds .row .val{font-family:'Fraunces',serif;font-size:18px;color:var(--fg);font-variation-settings:"opsz" 144;}
+
+/* ladder */
+.ladder{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:56px;}
+.ladder .rung{padding:32px 24px 28px;border:1px solid var(--line);border-right:none;position:relative;}
+.ladder .rung:last-child{border-right:1px solid var(--line);}
+.ladder .rung .ix{font-family:'Fraunces',serif;font-size:42px;font-weight:300;line-height:1;color:var(--faint);margin-bottom:20px;font-variation-settings:"opsz" 144;}
+.ladder .rung .nm{font-family:'Fraunces',serif;font-size:19px;color:var(--fg);line-height:1.25;margin-bottom:12px;font-variation-settings:"opsz" 144;}
+.ladder .rung .ca{font-size:12px;color:var(--dim);line-height:1.6;}
+.ladder .rung.now{background:rgba(106,176,196,0.05);border-color:var(--cyan);box-shadow:inset 0 0 0 1px rgba(106,176,196,0.2);z-index:2;}
+.ladder .rung.now .ix{color:var(--cyan);}
+.ladder .rung.now .tag{display:inline-block;margin-top:14px;font-size:9px;letter-spacing:0.22em;color:var(--cyan);border:1px solid var(--cyan);padding:3px 7px;}
+.ladder .rung.fade1 .ix,.ladder .rung.fade1 .nm{opacity:0.85;}
+.ladder .rung.fade2 .ix,.ladder .rung.fade2 .nm{opacity:0.62;}
+.ladder .rung.fade2 .ca{opacity:0.7;}
+.ladder .rung.fade3 .ix,.ladder .rung.fade3 .nm{opacity:0.4;}
+.ladder .rung.fade3 .ca{opacity:0.55;}
+
+/* contact */
+.contacts{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:56px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.contacts a{padding:36px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:12px;transition:background .15s;}
+.contacts a:last-child{border-right:none;}
+.contacts a:hover{background:rgba(15,19,25,0.7);}
+.contacts a .lab{font-size:10px;letter-spacing:0.24em;color:var(--faint);text-transform:uppercase;}
+.contacts a .ti{font-family:'Fraunces',serif;font-size:24px;color:var(--fg);font-variation-settings:"opsz" 144;}
+.contacts a .arr{font-size:11px;color:var(--orange);letter-spacing:0.18em;text-transform:uppercase;}
+
+footer{padding:32px var(--pad);border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;}
+footer .left{display:flex;align-items:center;gap:14px;font-size:10px;letter-spacing:0.22em;color:var(--faint);text-transform:uppercase;}
+footer .left .mk{width:18px;height:18px;}
+footer .right{font-size:10px;letter-spacing:0.22em;color:var(--faint);text-transform:uppercase;}
+
+/* responsive */
+@media (max-width: 960px){
+  .stats-row{grid-template-columns:1fr;}
+  .stat{border-right:none;border-bottom:1px solid var(--line);}
+  .stat:last-child{border-bottom:none;}
+  .chain{grid-template-columns:1fr;}
+  .chain .step{border:1px solid var(--line);border-bottom:none;}
+  .chain .step:last-child{border-bottom:1px solid var(--line);}
+  .chain-bullets{grid-template-columns:1fr;}
+  .timing{grid-template-columns:1fr;}
+  .timing .card{border-right:none;}
+  .traction{grid-template-columns:1fr;border-left:1px solid var(--line);}
+  .founder-grid{grid-template-columns:1fr;gap:40px;}
+  .ask-grid{grid-template-columns:1fr;gap:40px;}
+  .ladder{grid-template-columns:1fr;}
+  .ladder .rung{border-right:1px solid var(--line);border-bottom:none;}
+  .ladder .rung:last-child{border-bottom:1px solid var(--line);}
+  .contacts{grid-template-columns:1fr;}
+  .contacts a{border-right:none;border-bottom:1px solid var(--line);}
+  .contacts a:last-child{border-bottom:none;}
+  .proof-meta{grid-template-columns:repeat(2,1fr);}
+  .proof-meta div{border-bottom:1px solid var(--line);}
+  .proof-meta div:nth-child(2n){border-right:none;}
+  .telemetry{font-size:9px;gap:14px;}
+}
+@media (max-width: 600px){
+  .hero-top{flex-direction:column;}
+  .telemetry{justify-content:flex-start;}
+  .capture-frame{padding:20px 12px;}
+}
+
+/* SOAPS embedded sequence styles - scoped */
+.soaps{font-family:'JetBrains Mono',monospace;color:#c8d0e0;}
+.soaps .s-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.soaps .s-logo{font-size:10px;letter-spacing:0.22em;color:var(--cyan);opacity:0.85;}
+.soaps .s-seq-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.soaps .s-dots{display:flex;gap:6px;align-items:center;}
+.soaps .s-dot-lbl{font-size:9px;color:rgba(200,208,224,0.4);letter-spacing:0.12em;margin-right:2px;}
+.soaps .sdot{width:8px;height:8px;border-radius:50%;background:rgba(200,208,224,0.18);display:inline-block;transition:background .3s;}
+.soaps .sdot.a{background:var(--cyan);}
+.soaps .sdot.d{background:rgba(200,208,224,0.4);}
+.soaps .s-ov-label{font-size:10px;color:rgba(200,208,224,0.6);letter-spacing:0.1em;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.soaps canvas{display:block;width:100%;height:auto;border:1px solid rgba(106,176,196,0.18);background:#070c18;}
+.soaps .s-tl{font-size:11px;color:var(--cyan);letter-spacing:0.06em;margin:10px 0 4px;min-height:16px;}
+.soaps .s-pl{font-size:10px;letter-spacing:0.18em;color:rgba(200,208,224,0.6);margin:12px 0 6px;text-transform:uppercase;}
+.soaps .s-pd{font-size:13px;color:rgba(200,208,224,0.92);line-height:1.7;min-height:80px;}
+.soaps .s-ctrl{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center;}
+.soaps .s-ctrl button{background:transparent;border:1px solid rgba(106,176,196,0.4);color:#a8d4e2;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;padding:8px 16px;border-radius:0;cursor:pointer;transition:background .15s,color .15s;text-transform:uppercase;}
+.soaps .s-ctrl button:hover:not(:disabled){background:rgba(106,176,196,0.12);color:var(--fg);}
+.soaps .s-ctrl button:disabled{opacity:0.3;cursor:not-allowed;}
+.soaps .s-badge{font-size:9px;letter-spacing:0.18em;color:rgba(200,208,224,0.32);margin-top:18px;border-top:1px solid rgba(106,176,196,0.12);padding-top:12px;text-transform:uppercase;}
+
+/* number marker for stats */
+.num-mark::before{content:"↳";color:var(--orange);margin-right:8px;font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+
+<!-- 01 HERO -->
+<section class="hero" data-screen-label="01 Hero">
+  <div class="hero-top">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-label="Delta Infinite">
+        <path d="M4 26 L16 5 L28 26 Z"/>
+        <ellipse cx="22.4" cy="8" rx="2.0" ry="1.7" stroke-width="1.2"/>
+        <ellipse cx="25.6" cy="8" rx="2.0" ry="1.7" stroke-width="1.2"/>
+      </svg>
+      <span class="brand-name">Delta Infinite</span>
+    </div>
+    <div class="telemetry">
+      <span><span class="k">DATE</span> <span class="v" id="hero-date">2026.05.05</span></span>
+      <span><span class="k">PHASE</span> <span class="v cyan">TRL-3 / TRL-4 SPRINT</span></span>
+      <span><span class="dot"></span><span class="k">PRE-SEED</span> <span class="v orange">// OPEN</span></span>
+    </div>
+  </div>
+
+  <div class="hero-body">
+    <div class="hero-inner">
+      <div class="eyebrow">Capture-First Space Infrastructure</div>
+      <h1>Making uncontrolled mass <em class="italic-cyan">controllable</em>.</h1>
+      <p class="hero-sub">Foam-based pre-stabilization for non-cooperative orbital capture. The missing prerequisite for every downstream capture player in the ISAM value chain.</p>
+    </div>
+  </div>
+
+  <div class="hero-foot">
+    <a href="#problem" class="cta">Read the brief <span class="arrow">↓</span></a>
+    <a href="assets/whitepaper.pdf" target="_blank" rel="noopener" class="text-link">Download white paper (PDF)</a>
+  </div>
+
+  <div class="scroll-hint">SCROLL · 11 SECTIONS</div>
+</section>
+
+<!-- 02 PROBLEM -->
+<section id="problem" data-screen-label="02 Problem">
+  <div class="container">
+    <div class="eyebrow">The Problem</div>
+    <h2 style="max-width:22ch;">No one has captured a tumbling, non-cooperative object in orbit.</h2>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="num">1,300</div>
+        <div class="lab">Derelict Objects in LEO</div>
+        <div class="copy">Dead rocket bodies and satellites totaling over 2,300 metric tons.</div>
+      </div>
+      <div class="stat">
+        <div class="num">10–30<span class="small">°/s</span></div>
+        <div class="lab">Real Debris Tumble Rates</div>
+        <div class="copy">Every rigid-contact capture system tops out between 1 and 5°/s.</div>
+      </div>
+      <div class="stat zero">
+        <div class="num">0</div>
+        <div class="lab">Demonstrated Solutions</div>
+        <div class="copy">No contactless detumbling has ever been demonstrated in orbit.</div>
+      </div>
+    </div>
+
+    <p class="body" style="max-width:72ch;">Capture is not one problem; it is a cascading chain of unsolved dependencies — <strong>characterization</strong>, <strong>pre-stabilization</strong>, <strong>universal capture</strong>, and <strong>post-capture stabilization</strong>. Every player downstream depends on the layer upstream. The chain breaks at pre-stabilization. We are building the missing prerequisite.</p>
+  </div>
+</section>
+
+<!-- 03 CAPTURE SEQUENCE -->
+<section id="capture" data-screen-label="03 Capture Sequence">
+  <div class="container">
+    <div class="eyebrow cyan">S.O.A.P.S. // Interactive</div>
+    <h2 style="max-width:20ch;">Approach. Deploy. Stabilize. <em class="italic-cyan">Recover.</em></h2>
+    <p class="lede" style="margin-top:20px;">Live simulation of the full capture sequence. Step through detection, approach, foam deployment, stabilization, and controlled departure.</p>
+
+    <div class="capture-frame">
+      <div class="capture-host soaps">
+        <div class="s-header">
+          <span class="s-logo">DELTA INFINITE · CAPTURE-FIRST SPACE INFRASTRUCTURE</span>
+        </div>
+        <div class="s-seq-row">
+          <div class="s-dots">
+            <span class="s-dot-lbl">SEQ</span>
+            <span class="sdot a" id="d0"></span><span class="sdot" id="d1"></span>
+            <span class="sdot" id="d2"></span><span class="sdot" id="d3"></span><span class="sdot" id="d4"></span>
+          </div>
+          <label class="s-ov-label"><input type="checkbox" id="ov"> TECH OVERLAY</label>
+        </div>
+        <canvas id="sc" width="660" height="370"></canvas>
+        <div class="s-tl" id="tl"></div>
+        <div class="s-pl" id="pl"></div>
+        <div class="s-pd" id="pd"></div>
+        <div class="s-ctrl">
+          <button id="pb" type="button">← PREV</button>
+          <button id="nb" type="button">NEXT →</button>
+          <button id="rb" type="button">↺ RESTART</button>
+        </div>
+        <div class="s-badge">S.O.A.P.S. CAPTURE SEQUENCE · DELTA INFINITE · TRL-3 CONCEPT DEMONSTRATION · NON-PROPRIETARY</div>
+      </div>
+    </div>
+    <div class="caption">Live simulation. Click through the phases. Toggle <em>tech overlay</em> for engineering annotations.</div>
+  </div>
+</section>
+
+<!-- 04 PHYSICAL PROOF -->
+<section id="proof" data-screen-label="04 Physical Proof">
+  <div class="container">
+    <div class="eyebrow accent">Early Validation</div>
+    <h2 style="max-width:22ch;">We have already done this with rocks and Great Stuff.</h2>
+
+    <div class="video-frame">
+      <video src="assets/rocksicle.mov" autoplay muted loop playsinline preload="metadata"></video>
+      <div class="video-meta"><span class="dot"></span>ROCKSICLE DEMO · LOOP</div>
+    </div>
+
+    <p class="body" style="max-width:78ch;margin-top:36px;">Working chemistry beats illustrated claims. The rocksicle demo is our crude-but-credible proof-of-concept: hard foam expanding around irregular, tumbling, mass-asymmetric targets — exactly the operational regime where rigid grapples and adhesives fail. The space-environment version expands isotropically in vacuum and microgravity. The behavior is the same. <strong>The physics scale up.</strong></p>
+
+    <div class="proof-meta">
+      <div><div class="k">Build</div><div class="v">2025-11 · Terrestrial</div></div>
+      <div><div class="k">Foam</div><div class="v">Polyurethane (commercial)</div></div>
+      <div><div class="k">Targets</div><div class="v">Irregular rock, ~0.5–2 kg</div></div>
+      <div><div class="k">Status</div><div class="v">PoC executed · TRL-3</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 WHY THIS SLOT IS VACANT -->
+<section id="position" data-screen-label="05 Market Position">
+  <div class="container">
+    <div class="eyebrow">Market Position</div>
+    <h2 style="max-width:24ch;">Pre-stabilization is a <em class="italic-cyan">vacant, structurally necessary</em> layer in the ISAM value chain.</h2>
+
+    <div class="chain">
+      <div class="step">
+        <div class="ix">01</div>
+        <div class="nm">Characterization</div>
+        <div class="who">LeoLabs · Slingshot · NorthStar — orbital sensing &amp; SDA.</div>
+      </div>
+      <div class="step highlight">
+        <div class="ix">02</div>
+        <div class="nm">Pre-Stabilization</div>
+        <div class="who">← Delta Infinite. Vacant layer.</div>
+        <span class="tag">CURRENT SCOPE</span>
+      </div>
+      <div class="step">
+        <div class="ix">03</div>
+        <div class="nm">Capture</div>
+        <div class="who">Astroscale · ClearSpace · Starfish — rigid-contact systems.</div>
+      </div>
+      <div class="step">
+        <div class="ix">04</div>
+        <div class="nm">Post-Capture Stabilization</div>
+        <div class="who">Servicer attitude control once mechanically coupled.</div>
+      </div>
+      <div class="step">
+        <div class="ix">05</div>
+        <div class="nm">Disposal / Relocation</div>
+        <div class="who">Deorbit, graveyard, depot delivery, or asset re-use.</div>
+      </div>
+    </div>
+
+    <div class="chain-bullets">
+      <div class="b">
+        <div class="nb">01</div>
+        <div class="ti">No competitor has demonstrated capture of a tumbling non-cooperative object in orbit.</div>
+        <div class="de">Every rigid-contact system in flight depends on rotation matching or active target stabilization. Real debris tumbles 6–20× faster than current capture envelopes allow.</div>
+      </div>
+      <div class="b">
+        <div class="nb">02</div>
+        <div class="ti">The pre-stabilization layer is licensed, not built — every downstream capture player needs it.</div>
+        <div class="de">We are not building a better version of what competitors already offer. We are building the missing prerequisite they need to license.</div>
+      </div>
+      <div class="b">
+        <div class="nb">03</div>
+        <div class="ti">Surface-independent foam expansion is the only approach that works on irregular, mass-asymmetric, uncharacterized targets.</div>
+        <div class="de">Adhesives need clean surfaces. Grapples need fixtures. Nets need cooperative geometry. Foam doesn't care.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 WHY NOW -->
+<section id="timing" data-screen-label="06 Timing">
+  <div class="container">
+    <div class="eyebrow">Timing</div>
+    <h2 style="max-width:18ch;">Three forces converging now.</h2>
+
+    <div class="timing">
+      <div class="card">
+        <div class="ix">01</div>
+        <div class="ti">Regulatory Acceleration</div>
+        <div class="su">Government procurement is shifting from research to acquisition.</div>
+        <ul class="pts">
+          <li>FCC 5-year deorbit rule in effect.</li>
+          <li>ORBITS Act funded through appropriations.</li>
+          <li>ESA Zero Debris Charter active across primes.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="ix">02</div>
+        <div class="ti">First Demonstrations</div>
+        <div class="su">Two flagship missions will attempt non-cooperative capture at the rate ceiling.</div>
+        <ul class="pts">
+          <li>ADRAS-J2 — FY2027 contact attempt.</li>
+          <li>ClearSpace-1 — 2028–2029 deorbit demo.</li>
+          <li>Success validates the market. Failure validates pre-stabilization.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="ix">03</div>
+        <div class="ti">Architectural Decomposition</div>
+        <div class="su">The integrated capture mission is breaking into purchasable services.</div>
+        <ul class="pts">
+          <li>SpaceWERX Orbital Prime segmented tracks.</li>
+          <li>COSMIC depot analysis — modular value chain.</li>
+          <li>Pre-stabilization is now a distinct line item.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 TRACTION -->
+<section id="traction" data-screen-label="07 Traction">
+  <div class="container">
+    <div class="eyebrow brass">Where We Are</div>
+    <h2 style="max-width:18ch;">Validated, <em class="italic-orange">not theoretical.</em></h2>
+
+    <div class="traction">
+      <div class="t">
+        <div class="mark"></div>
+        <div class="lab">TRL-3 → TRL-4 Sprint</div>
+        <div class="st">Vacuum chamber thermal cycling capability online. Foam dispensing module assembled and mounted.</div>
+      </div>
+      <div class="t">
+        <div class="mark"></div>
+        <div class="lab">Advanced Space Partnership</div>
+        <div class="st">Signed trade study agreement. Orbital dynamics and mission integration support secured.</div>
+      </div>
+      <div class="t">
+        <div class="mark"></div>
+        <div class="lab">Physical Proof-of-Concept</div>
+        <div class="st">Rocksicle demo executed. Foam capture of irregular tumbling targets demonstrated terrestrially.</div>
+      </div>
+      <div class="t brass">
+        <div class="mark"></div>
+        <div class="lab">Customer Pipeline</div>
+        <div class="st">Active LOI conversations with named ADR / ISAM players. KMI conditional LOI in hand.</div>
+      </div>
+      <div class="t brass">
+        <div class="mark"></div>
+        <div class="lab">Non-Dilutive Pipeline</div>
+        <div class="st">NSF SBIR Project Pitch in draft. DoD SBIR Phase I tracks under evaluation.</div>
+      </div>
+      <div class="t brass">
+        <div class="mark"></div>
+        <div class="lab">Accelerator Pipeline</div>
+        <div class="st">Techstars Boulder + Techstars Space applications in progress. Orbit Fab precedent.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 FOUNDER -->
+<section id="founder" data-screen-label="08 Founder">
+  <div class="container">
+    <div class="eyebrow accent">Founder</div>
+    <h2 style="max-width:22ch;font-size:clamp(28px,3.6vw,46px);"><em>Singularly focused on solving the hardest problem in asteroid mining.</em></h2>
+
+    <div class="founder-grid">
+      <div class="founder-photo">
+        <img src="assets/founder.jpeg" alt="Kai — Founder, Delta Infinite" />
+        <div class="strip"><span>Founder · CEO</span><span class="v">KAI CAHLIL</span></div>
+      </div>
+      <div class="founder-creds">
+        <div class="name">Kai Cahlil</div>
+        <div class="role">Founder &amp; CEO · Delta Infinite</div>
+        <ul>
+          <li><div class="ix">01</div><div class="tx">13+ years leading hands-on R&amp;D in asteroid mining and orbital debris tech.<span class="em">Continuous focus across one problem domain.</span></div></li>
+          <li><div class="ix">02</div><div class="tx">6+ companies founded across eComm, SaaS, sustainability, and advanced materials.<span class="em">Proven operator before space.</span></div></li>
+          <li><div class="ix">03</div><div class="tx">Bootstrapped R&amp;D milestones — partnered with industry leaders.<span class="em">Advanced Space, ATTX.</span></div></li>
+          <li><div class="ix">04</div><div class="tx">Self-taught, self-funded, mission-driven through 13 years of preparation.<span class="em">Singular conviction, validated by capital efficiency.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 ASK -->
+<section id="ask" data-screen-label="09 Ask">
+  <div class="container">
+    <div class="eyebrow accent">Pre-Seed // Open</div>
+    <h2 class="ask-headline"><span class="num">$150K–$250K</span> to convert promising material behavior into characterized, integration-ready data.</h2>
+
+    <div class="ask-grid">
+      <div>
+        <p class="body" style="max-width:60ch;">This is not a request to fund the future of asteroid mining. It is a request to fund the bounded, six-month TRL-4 validation campaign that produces the hard engineering data to prove the foam works as characterized — in vacuum, across operational thermal range, at the geometries and rotation rates real debris exhibits.</p>
+        <p class="body" style="max-width:60ch;margin-top:18px;">The deliverable is not a product. It is a defensible engineering record that converts &ldquo;we believe&rdquo; into &ldquo;we measured.&rdquo;</p>
+      </div>
+      <div class="use-of-funds">
+        <div class="uh">Use of Funds</div>
+        <div class="row"><div class="lab">Validation testing — vacuum chamber thermal cycling, expansion characterization</div><div class="val">~40%</div></div>
+        <div class="row"><div class="lab">Materials characterization — foam chemistry, cure kinetics, mechanical properties</div><div class="val">~25%</div></div>
+        <div class="row"><div class="lab">Founder operating room — six-month focused execution window</div><div class="val">~20%</div></div>
+        <div class="row"><div class="lab">Partnership pre-flight alignment — Advanced Space, ADR / ISAM customer integration</div><div class="val">~15%</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 LADDER -->
+<section id="ladder" data-screen-label="10 Ladder">
+  <div class="container">
+    <div class="eyebrow cyan">The Ladder</div>
+    <h2 style="max-width:22ch;">From debris removal to <em class="italic-cyan">asteroid mining infrastructure.</em></h2>
+
+    <div class="ladder">
+      <div class="rung now">
+        <div class="ix">I.</div>
+        <div class="nm">Pre-Stabilization Service</div>
+        <div class="ca">Foam-based detumbling licensed to capture primes. Bounded, fundable, near-term.</div>
+        <span class="tag">CURRENT</span>
+      </div>
+      <div class="rung fade1">
+        <div class="ix">II.</div>
+        <div class="nm">Captured ADR Operations</div>
+        <div class="ca">End-to-end debris removal — capture, deorbit, contracted disposal.</div>
+      </div>
+      <div class="rung fade2">
+        <div class="ix">III.</div>
+        <div class="nm">Captured ISAM / Depot Logistics</div>
+        <div class="ca">Re-positioning derelict mass into depots and recycling streams.</div>
+      </div>
+      <div class="rung fade3">
+        <div class="ix">IV.</div>
+        <div class="nm">Asteroid Capture &amp; Relocation</div>
+        <div class="ca">The endgame. Heritage-built on a decade of orbital capture flight history.</div>
+      </div>
+    </div>
+
+    <p class="body" style="max-width:74ch;margin-top:40px;">Debris removal is the wedge — not the destination. Each rung de-risks and credentials the next. The same foam that detumbles a derelict rocket body in LEO is the foam that captures a 30-meter asteroid in a heliocentric orbit a decade from now. <strong>We build heritage on debris and spend it on rocks.</strong></p>
+  </div>
+</section>
+
+<!-- 11 CONTACT -->
+<section id="contact" data-screen-label="11 Contact">
+  <div class="container">
+    <div class="eyebrow">Connect</div>
+    <h2 style="max-width:30ch;font-size:clamp(24px,3vw,38px);"><em>We are talking to investors, ADR primes, and ISAM integrators.</em></h2>
+
+    <div class="contacts">
+      <a href="assets/whitepaper.pdf" target="_blank" rel="noopener">
+        <span class="lab">Document</span>
+        <span class="ti">Read the white paper</span>
+        <span class="arr">PDF · 2026 →</span>
+      </a>
+      <a href="mailto:kai@delta-infinite.com">
+        <span class="lab">Direct</span>
+        <span class="ti">Email Kai directly</span>
+        <span class="arr">kai@delta-infinite.com →</span>
+      </a>
+      <a href="https://www.linkedin.com/company/delta-infinite/" target="_blank" rel="noopener">
+        <span class="lab">Network</span>
+        <span class="ti">Connect on LinkedIn</span>
+        <span class="arr">delta-infinite →</span>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="left">
+      <svg class="mk" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M4 26 L16 5 L28 26 Z"/>
+        <ellipse cx="22.4" cy="8" rx="2.0" ry="1.7" stroke-width="1.2"/>
+        <ellipse cx="25.6" cy="8" rx="2.0" ry="1.7" stroke-width="1.2"/>
+      </svg>
+      <span>© 2026 Delta Infinite</span>
+    </div>
+    <div class="right">Confidential — pre-decisional · v1</div>
+  </footer>
+</section>
+
+<script>
+// hero date
+(function(){
+  const d=new Date();
+  const pad=(n)=>String(n).padStart(2,'0');
+  document.getElementById('hero-date').textContent=`${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())}`;
+})();
+
+// SOAPS embedded sequence (v4 — focused beam, foam particle stream, full v4 drawing logic)
+(function(){
+if(!document.getElementById('sc')) return;
+const cv=document.getElementById('sc');
+const cx=cv.getContext('2d');
+const W=660,H=370,HH=H/2;
+
+const PH=[
+  {l:'PHASE 1 — DETECTION & CHARACTERIZATION',
+   d:'Servicer holds at 500m standoff range. Active sensor sweep characterizes target geometry, rotation rate, and inertia state. The object tumbles freely — no cooperative response, unknown mass distribution, no docking fixtures, no communication link. This is the hardest class of orbital object.',
+   t:()=>`RANGE: 500 m  |  CLOSURE: 2.3 m/s  |  TARGET ROT: ${rr.toFixed(1)} °/s`},
+  {l:'PHASE 2 — PROXIMITY APPROACH',
+   d:'Servicer closes on a curved, passively safe intercept trajectory. Relative navigation sensors refine the 6-DOF state estimate. The debris continues tumbling at full rate. Traditional capture methods require rotation matching or target stabilization — S.O.A.P.S. does not.',
+   t:()=>`RANGE: ${Math.max(12,Math.round(500-(sx-90)/(270-90)*488))} m  |  CLOSURE: 1.8 m/s  |  TARGET ROT: ${rr.toFixed(1)} °/s`},
+  {l:'PHASE 3 — FOAM DEPLOYMENT',
+   d:'Foam is ejected from the servicer nozzle and expands around the target. The viscoelastic matrix conforms to the irregular geometry regardless of spin state or surface material. As the foam cures, rotational energy is progressively absorbed and damped.',
+   t:()=>`RANGE: 12 m  |  FOAM EXP: ${Math.round(fe*100)}%  |  TARGET ROT: ${rr.toFixed(1)} °/s`},
+  {l:'PHASE 4 — STABILIZATION COMPLETE',
+   d:'Foam has cured and solidified. Target rotation reduced to near-zero. Servicer and target are now mechanically coupled through the foam matrix. The captured mass is controllable — ready for repositioning, deorbit, or handoff to a receiving vehicle.',
+   t:()=>`RANGE: 12 m  |  CLOSURE: 0.0 m/s  |  TARGET ROT: 0.3 °/s  |  STATUS: STABILIZED`},
+  {l:'PHASE 5 — CONTROLLED OBJECT',
+   d:'Servicer initiates departure burn with the foam-encapsulated target in tow. From uncontrolled debris to infrastructure asset — this is the capture-first value creation event. The object is now economically different from what it was four minutes ago.',
+   t:()=>`STATUS: CONTROLLED DEPARTURE  |  TARGET ROT: 0.3 °/s  |  OBJECT: MASS CONTROLLED`}
+];
+
+let p=0,da=0,rr=18.2,fe=0,sa=0,sx=90,sy=HH,dx=0,tm=0,lt=Date.now(),ov=false;
+let scanT=0,scanData=[],zoom=1,zoomTx=0,zoomTy=0,targetZoom=1,targetTx=0,targetTy=0;
+
+const SCAN_HITS=[
+  {a:0.45,label:'ROT RATE: 18.2 °/s'},
+  {a:1.05,label:'EST MASS: ~820 kg'},
+  {a:1.75,label:'GEOMETRY: IRREGULAR'},
+  {a:2.50,label:'SURFACE: PASSIVE'},
+  {a:3.30,label:'SPIN AXIS: UNDEFINED'},
+  {a:4.10,label:'DOCKING FIXTURE: NONE'},
+];
+
+const ST=[90,270,355,355,355];
+const DBX=430,DBY=HH;
+
+const stars=Array.from({length:100},()=>({
+  x:Math.random()*W,y:Math.random()*H,
+  r:Math.random()*1.4+0.2,a:Math.random()*0.55+0.35
+}));
+
+const FBLOB=[
+  {r:56,a:0},{r:44,a:0.63},{r:40,a:1.26},{r:46,a:1.88},
+  {r:54,a:2.51},{r:42,a:3.14},{r:38,a:3.77},{r:48,a:4.40},
+  {r:58,a:5.03},{r:50,a:5.65}
+];
+
+// Pre-computed deterministic offsets for foam particle stream
+const FOAM_PARTICLES=Array.from({length:14},(_,i)=>({
+  o:i/14, dy:Math.sin(i*1.7)*0.6, ds:Math.cos(i*1.3)*0.4
+}));
+
+function blobPath(cx2,x,y,pts,scale,t,cured){
+  const n=pts.length;
+  const exp=pts.map((pt,i)=>{
+    const w=cured?0:Math.sin(t*2.1+i*1.3)*0.05*scale;
+    return{x:Math.cos(pt.a)*(pt.r+w)*scale+x,y:Math.sin(pt.a)*(pt.r+w)*scale+y};
+  });
+  cx2.beginPath();cx2.moveTo(exp[0].x,exp[0].y);
+  for(let i=0;i<n;i++){
+    const cur=exp[i],nxt=exp[(i+1)%n],prv=exp[(i+n-1)%n],nn=exp[(i+2)%n];
+    const cp1x=cur.x+(nxt.x-prv.x)*0.22,cp1y=cur.y+(nxt.y-prv.y)*0.22;
+    const cp2x=nxt.x-(nn.x-cur.x)*0.22,cp2y=nxt.y-(nn.y-cur.y)*0.22;
+    cx2.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,nxt.x,nxt.y);
+  }
+  cx2.closePath();
+}
+
+function drawSat(cx2,x,y,angle){
+  cx2.save();cx2.translate(x,y);cx2.rotate(angle);
+  cx2.strokeStyle='#909ab0';cx2.lineWidth=1.8;
+  cx2.beginPath();cx2.moveTo(-18,0);cx2.lineTo(-28,0);cx2.stroke();
+  cx2.beginPath();cx2.moveTo(18,0);cx2.lineTo(28,0);cx2.stroke();
+  cx2.fillStyle='#152248';cx2.fillRect(-62,-9,34,18);
+  cx2.strokeStyle='#3060a0';cx2.lineWidth=0.5;cx2.strokeRect(-62,-9,34,18);
+  cx2.strokeStyle='#264488';cx2.lineWidth=0.6;
+  for(let i=0;i<3;i++){cx2.strokeRect(-62+i*11.3,-9,11.3,18);cx2.beginPath();cx2.moveTo(-62+i*11.3,0);cx2.lineTo(-62+(i+1)*11.3,0);cx2.stroke();}
+  cx2.fillStyle='#152248';cx2.fillRect(28,-9,34,18);
+  cx2.strokeStyle='#3060a0';cx2.lineWidth=0.5;cx2.strokeRect(28,-9,34,18);
+  cx2.strokeStyle='#264488';cx2.lineWidth=0.6;
+  for(let i=0;i<3;i++){cx2.strokeRect(28+i*11.3,-9,11.3,18);cx2.beginPath();cx2.moveTo(28+i*11.3,0);cx2.lineTo(28+(i+1)*11.3,0);cx2.stroke();}
+  cx2.fillStyle='#686e7a';cx2.fillRect(-18,-15,36,30);
+  cx2.fillStyle='rgba(210,178,88,0.28)';
+  for(let i=-15;i<15;i+=5)cx2.fillRect(-18,i,36,2.8);
+  cx2.strokeStyle='#8a929e';cx2.lineWidth=1;cx2.strokeRect(-18,-15,36,30);
+  cx2.strokeStyle='#50565e';cx2.lineWidth=0.5;
+  cx2.beginPath();cx2.moveTo(0,-15);cx2.lineTo(0,15);cx2.moveTo(-9,-15);cx2.lineTo(-9,15);cx2.moveTo(9,-15);cx2.lineTo(9,15);cx2.stroke();
+  cx2.fillStyle='#bcc8d0';cx2.beginPath();cx2.ellipse(5,-22,9,5,-0.15,0,Math.PI*2);cx2.fill();
+  cx2.strokeStyle='#8898a8';cx2.lineWidth=0.8;cx2.stroke();
+  cx2.strokeStyle='#909ab0';cx2.lineWidth=1;cx2.beginPath();cx2.moveTo(5,-15);cx2.lineTo(5,-17);cx2.stroke();
+  cx2.strokeStyle='#8898a8';cx2.lineWidth=0.4;
+  cx2.beginPath();cx2.moveTo(5,-22);cx2.lineTo(-4,-22);cx2.moveTo(5,-22);cx2.lineTo(14,-22);cx2.moveTo(5,-22);cx2.lineTo(5,-27);cx2.stroke();
+  cx2.fillStyle='#323840';
+  [[-20,-17],[-20,13],[16,-17],[16,13]].forEach(([tx,ty])=>cx2.fillRect(tx,ty,4,4));
+  cx2.fillStyle='#1c2430';cx2.fillRect(-17,-17,10,4);
+  cx2.fillStyle='#2a508a';cx2.fillRect(-15,-16,6,2);
+  cx2.restore();
+}
+
+function drawServicer(cx2,x,y){
+  cx2.save();cx2.translate(x,y);
+  cx2.fillStyle='#1a3a5a';cx2.fillRect(-6,-24,12,10);cx2.fillRect(-6,14,12,10);
+  cx2.fillStyle='#2a5fa0';cx2.fillRect(-16,-10,38,20);
+  cx2.fillStyle='#1e55aa';cx2.fillRect(-12,-7,14,14);
+  cx2.fillStyle='#4488cc';cx2.strokeStyle='#88c4ff';cx2.lineWidth=0.5;cx2.strokeRect(-12,-7,14,14);
+  cx2.fillStyle='#88c4ff';cx2.beginPath();cx2.arc(22,0,3,0,Math.PI*2);cx2.fill();
+  cx2.strokeStyle='#aad4ff';cx2.lineWidth=1;
+  cx2.beginPath();cx2.moveTo(22,0);cx2.lineTo(26,-2);cx2.lineTo(26,2);cx2.closePath();cx2.stroke();
+  cx2.restore();
+}
+
+function upd(){
+  const now=Date.now(),dt=Math.min((now-lt)/1000,0.05);
+  lt=now;tm+=dt;
+  const tx=ST[p]+(p===4?dx:0);
+  sx+=(tx-sx)*dt*3;
+  if(p===2)rr=Math.max(3,rr-dt*13);
+  else if(p<=1)rr=18.2;
+  else if(p>=3)rr=0.3;
+  da+=rr*dt;
+  if(p===0){
+    scanT+=dt*1.4;
+    SCAN_HITS.forEach(h=>{if(scanT>h.a&&!h.revealed){h.revealed=true;scanData.push(h.label);h.flashT=tm;}});
+  }
+  if(p===2)fe=Math.min(1,fe+dt*0.38);
+  if(p===4){
+    dx=Math.min(130,dx+dt*20);
+    targetZoom=0.62;targetTx=137-dx;targetTy=0;
+  } else {targetZoom=1;targetTx=0;targetTy=0;}
+  zoom+=(targetZoom-zoom)*dt*2.5;
+  zoomTx+=(targetTx-zoomTx)*dt*2.5;
+  zoomTy+=(targetTy-zoomTy)*dt*2.5;
+  sa+=dt*95;
+}
+
+function drw(){
+  cx.fillStyle='#070c18';cx.fillRect(0,0,W,H);
+  stars.forEach(s=>{cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fillStyle=`rgba(255,255,255,${s.a})`;cx.fill();});
+  cx.save();cx.scale(zoom,zoom);cx.translate(zoomTx,zoomTy);
+  cx.save();cx.globalAlpha=0.07;cx.strokeStyle='#4a9eff';cx.lineWidth=0.5;
+  cx.beginPath();cx.ellipse(W/2,H/2+28,268,78,0,0,Math.PI*2);cx.stroke();cx.restore();
+  const dbx=DBX+(p===4?dx:0),dby=DBY;
+  if(p===1){
+    cx.save();cx.strokeStyle='#4a9eff';cx.lineWidth=1;cx.globalAlpha=0.28;cx.setLineDash([4,7]);
+    cx.beginPath();cx.moveTo(sx,sy);cx.quadraticCurveTo((sx+dbx)/2,HH-44,dbx-85,dby);
+    cx.stroke();cx.setLineDash([]);cx.restore();
+  }
+  if(p===0){
+    // Focused forward-directed sensor beam — replaces wide sweep
+    const ba=Math.atan2(dby-sy,dbx-sx);
+    const halfW=Math.PI/6;            // 30° half-width = 60° total cone
+    const beamLen=dbx-sx-30;
+    const vx=sx+20, vy=sy;            // beam vertex (just past servicer nose)
+    cx.save();
+    // Cone fill
+    cx.globalAlpha=0.10;cx.fillStyle='#4a9eff';
+    cx.beginPath();cx.moveTo(vx,vy);
+    cx.arc(vx,vy,beamLen,ba-halfW,ba+halfW);cx.closePath();cx.fill();
+    // Cone edge lines
+    cx.globalAlpha=0.32;cx.strokeStyle='#4a9eff';cx.lineWidth=0.7;
+    cx.beginPath();
+    cx.moveTo(vx,vy);cx.lineTo(vx+Math.cos(ba-halfW)*beamLen,vy+Math.sin(ba-halfW)*beamLen);
+    cx.moveTo(vx,vy);cx.lineTo(vx+Math.cos(ba+halfW)*beamLen,vy+Math.sin(ba+halfW)*beamLen);
+    cx.stroke();
+    // Range arcs (graticule feel)
+    cx.globalAlpha=0.13;cx.lineWidth=0.5;
+    [0.33,0.66,1.0].forEach(f=>{
+      cx.beginPath();cx.arc(vx,vy,beamLen*f,ba-halfW,ba+halfW);cx.stroke();
+    });
+    // Active sweep line oscillating within cone
+    const sweepAng=ba+Math.sin(tm*1.6)*halfW*0.95;
+    cx.globalAlpha=0.85;cx.strokeStyle='#88c4ff';cx.lineWidth=1.4;
+    cx.beginPath();cx.moveTo(vx,vy);
+    cx.lineTo(vx+Math.cos(sweepAng)*beamLen,vy+Math.sin(sweepAng)*beamLen);
+    cx.stroke();
+    // Trailing fade behind sweep line
+    cx.globalAlpha=0.22;cx.lineWidth=4;cx.lineCap='round';
+    const trailAng=ba+Math.sin(tm*1.6-0.18)*halfW*0.95;
+    cx.beginPath();cx.moveTo(vx,vy);
+    cx.lineTo(vx+Math.cos(trailAng)*beamLen,vy+Math.sin(trailAng)*beamLen);
+    cx.stroke();cx.lineCap='butt';
+    // Expanding ping rings
+    for(let i=0;i<2;i++){
+      const ph=((tm*0.55)+i*0.5)%1;
+      const ringR=beamLen*ph;
+      cx.globalAlpha=0.42*(1-ph);
+      cx.strokeStyle='#88c4ff';cx.lineWidth=0.9;
+      cx.beginPath();cx.arc(vx,vy,ringR,ba-halfW,ba+halfW);cx.stroke();
+    }
+    // Hit pulse on target as each sensor finding registers
+    SCAN_HITS.forEach(h=>{
+      if(h.flashT){
+        const age=tm-h.flashT;
+        if(age<0.6){
+          cx.globalAlpha=0.55*(1-age/0.6);
+          cx.strokeStyle='#88c4ff';cx.lineWidth=1.5;
+          cx.beginPath();cx.arc(dbx,dby,18+age*40,0,Math.PI*2);cx.stroke();
+        }
+      }
+    });
+    cx.restore();
+  }
+  if(fe>0){
+    const cured=p>=3;
+    cx.save();cx.globalAlpha=cured?0.93:0.75;
+    const grad=cx.createRadialGradient(dbx,dby,0,dbx,dby,58*fe);
+    if(cured){grad.addColorStop(0,'#a06810');grad.addColorStop(1,'#7a4e08');}
+    else{grad.addColorStop(0,'#f5c040');grad.addColorStop(0.6,'#e8960a');grad.addColorStop(1,'#c07008');}
+    cx.fillStyle=grad;
+    blobPath(cx,dbx,dby,FBLOB,fe,tm,cured);cx.fill();
+    if(!cured){
+      cx.globalAlpha=0.22;cx.fillStyle='#ffe080';
+      blobPath(cx,dbx,dby,FBLOB,fe*0.62,tm+0.5,false);cx.fill();
+      cx.globalAlpha=0.35;cx.strokeStyle='#ffd060';cx.lineWidth=1.5;
+      blobPath(cx,dbx,dby,FBLOB,fe,tm,false);cx.stroke();
+    } else {
+      cx.globalAlpha=0.15;cx.strokeStyle='#c08030';cx.lineWidth=2;
+      blobPath(cx,dbx,dby,FBLOB,fe,tm,true);cx.stroke();
+    }
+    cx.restore();
+    if(ov&&fe>0.3){
+      cx.save();cx.globalAlpha=0.85;cx.fillStyle=cured?'#d4920a':'#f5a820';cx.font='9px "JetBrains Mono",monospace';
+      cx.fillText(cured?'CURE BOUNDARY':'FOAM EXPANSION FRONT',dbx+64,dby-8);
+      if(!cured)cx.fillText('6-DOF STABILIZATION ZONE',dbx+64,dby+6);
+      cx.restore();
+    }
+  }
+  // Foam particle stream during deployment (Phase 3)
+  if(p===2 && fe>0.04 && fe<0.95){
+    cx.save();
+    const nx=sx+22, ny=sy;
+    const tgX=dbx-30, tgY=dby;
+    const dxs=tgX-nx, dys=tgY-ny;
+    const perpY=-dxs/Math.hypot(dxs,dys), perpX=dys/Math.hypot(dxs,dys);
+    FOAM_PARTICLES.forEach((pt,i)=>{
+      const t=((tm*0.55)+pt.o)%1;
+      const drift=Math.sin(tm*2.2+i*0.7)*5*t;
+      const lx=nx+dxs*t+perpX*drift+pt.dy*2;
+      const ly=ny+dys*t+perpY*drift+pt.ds*2;
+      const sz=1.4+(1-t)*1.8;
+      cx.globalAlpha=Math.min(0.7,t*5)*(1-t*0.6)*(1-fe*0.4);
+      cx.fillStyle='#f5c040';
+      cx.beginPath();cx.arc(lx,ly,sz,0,Math.PI*2);cx.fill();
+    });
+    // Small flare at nozzle exit
+    const flare=0.6+Math.sin(tm*9)*0.2;
+    cx.globalAlpha=0.5*flare*(1-fe*0.5);
+    const fg=cx.createRadialGradient(nx,ny,0,nx,ny,8);
+    fg.addColorStop(0,'#fff0b0');fg.addColorStop(1,'rgba(245,192,64,0)');
+    cx.fillStyle=fg;
+    cx.beginPath();cx.arc(nx,ny,8,0,Math.PI*2);cx.fill();
+    cx.restore();
+  }
+  drawSat(cx,dbx,dby,da*Math.PI/180);
+  if(ov&&p<=2){
+    cx.save();cx.globalAlpha=0.75;cx.fillStyle='rgba(150,160,180,0.85)';cx.font='9px "JetBrains Mono",monospace';
+    cx.fillText('NON-COOPERATIVE TARGET',dbx-38,dby+72);
+    cx.fillText('DEFUNCT SATELLITE  · NO COMM',dbx-38,dby+83);cx.restore();
+  }
+  if(p>=3){
+    cx.save();cx.strokeStyle='#40c870';cx.lineWidth=1.5;cx.globalAlpha=0.45;cx.setLineDash([3,5]);
+    cx.beginPath();cx.moveTo(sx+22,sy);cx.lineTo(dbx,dby);cx.stroke();cx.setLineDash([]);cx.restore();
+    if(ov){cx.save();cx.fillStyle='#40c870';cx.globalAlpha=0.85;cx.font='9px "JetBrains Mono",monospace';cx.fillText('MECHANICAL COUPLE',sx+28,sy-16);cx.restore();}
+  }
+  drawServicer(cx,sx,sy);
+  if(p===4){
+    const pl=22+Math.sin(tm*14)*4;
+    cx.save();
+    cx.globalAlpha=0.62;cx.fillStyle='#88d4ff';
+    cx.beginPath();cx.moveTo(sx-16,sy);
+    cx.lineTo(sx-16-pl,sy-7+Math.sin(tm*11)*1.5);cx.lineTo(sx-16-pl,sy+7+Math.sin(tm*11+1)*1.5);
+    cx.closePath();cx.fill();
+    cx.globalAlpha=0.40;cx.fillStyle='#ff9944';
+    cx.beginPath();cx.moveTo(sx-16,sy);cx.lineTo(sx-16-pl*0.5,sy-3.5);cx.lineTo(sx-16-pl*0.5,sy+3.5);
+    cx.closePath();cx.fill();
+    cx.globalAlpha=0.18;cx.strokeStyle='#4a9eff';cx.lineWidth=0.8;cx.setLineDash([4,7]);
+    cx.beginPath();cx.moveTo(dbx,dby);cx.quadraticCurveTo(dbx+80,dby-18,dbx+155,dby-34);
+    cx.stroke();cx.setLineDash([]);cx.restore();
+    cx.save();cx.globalAlpha=0.92;
+    cx.fillStyle='#40e880';cx.font='bold 11px "JetBrains Mono",monospace';
+    cx.fillText('MASS: CONTROLLED',dbx-44,dby-70);
+    cx.fillStyle='rgba(64,232,128,0.14)';cx.fillRect(dbx-50,dby-84,168,18);cx.restore();
+    if(ov){cx.save();cx.globalAlpha=0.7;cx.fillStyle='#4a9eff';cx.font='9px "JetBrains Mono",monospace';cx.fillText('CONTROLLED DEPARTURE →',dbx+8,dby-38);cx.restore();}
+  }
+  cx.save();cx.globalAlpha=0.04;cx.strokeStyle='#4a9eff';cx.lineWidth=0.5;
+  for(let gx=0;gx<W;gx+=66){cx.beginPath();cx.moveTo(gx,0);cx.lineTo(gx,H);cx.stroke();}
+  for(let gy=0;gy<H;gy+=66){cx.beginPath();cx.moveTo(0,gy);cx.lineTo(W,gy);cx.stroke();}
+  cx.restore();
+  cx.restore();
+  cx.fillStyle='rgba(74,158,255,0.13)';cx.fillRect(10,10,202,22);
+  cx.fillStyle='#4a9eff';cx.font='9px "JetBrains Mono",monospace';
+  cx.fillText(`PHASE ${p+1}/5  · ${['DETECT','APPROACH','DEPLOY','STABILIZE','CONTROLLED'][p]}`,16,24);
+  if(p===4){
+    const zp=Math.round((1-zoom)*100);
+    cx.fillStyle='rgba(74,158,255,0.1)';cx.fillRect(W-140,10,130,22);
+    cx.fillStyle='#4a9eff';cx.font='9px "JetBrains Mono",monospace';
+    cx.fillText(`VIEW: -${zp}% ZOOM`,W-135,24);
+  }
+  if(p===0&&scanData.length>0){
+    const lh=13,pw=196,ph=16+scanData.length*lh+4;
+    const px=10,py=H-10-ph;
+    cx.fillStyle='rgba(6,14,28,0.94)';cx.fillRect(px,py,pw,ph);
+    cx.strokeStyle='#2a5a8a';cx.lineWidth=0.5;cx.strokeRect(px,py,pw,ph);
+    cx.fillStyle='#4a9eff';cx.font='8px "JetBrains Mono",monospace';cx.fillText('◈ SENSOR READOUT',px+6,py+11);
+    // LIVE pulse indicator
+    const pulse=(Math.sin(tm*4.5)+1)/2;
+    cx.fillStyle=`rgba(74,232,128,${0.45+pulse*0.5})`;
+    cx.beginPath();cx.arc(px+pw-26,py+8,2.2,0,Math.PI*2);cx.fill();
+    cx.fillStyle=`rgba(74,232,128,${0.7+pulse*0.2})`;
+    cx.font='7px "JetBrains Mono",monospace';
+    cx.fillText('LIVE',px+pw-19,py+10);
+    cx.strokeStyle='#2a5a8a';cx.lineWidth=0.3;cx.beginPath();cx.moveTo(px,py+14);cx.lineTo(px+pw,py+14);cx.stroke();
+    cx.fillStyle='#88c4ff';cx.font='8px "JetBrains Mono",monospace';
+    scanData.forEach((line,i)=>cx.fillText(`› ${line}`,px+6,py+26+i*lh));
+  }
+}
+
+function loop(){upd();drw();requestAnimationFrame(loop);}
+
+function uiUpd(){
+  for(let i=0;i<5;i++)document.getElementById('d'+i).className='sdot'+(i===p?' a':i<p?' d':'');
+  document.getElementById('pl').textContent=PH[p].l;
+  document.getElementById('pd').textContent=PH[p].d;
+  document.getElementById('pb').disabled=p===0;
+  document.getElementById('nb').disabled=p===4;
+}
+
+function tlUpd(){document.getElementById('tl').textContent=PH[p].t();setTimeout(tlUpd,220);}
+
+function go(d){
+  const np=p+d;if(np<0||np>4)return;p=np;
+  if(p<=2){fe=0;rr=18.2;}else{fe=1;rr=0.3;}
+  if(p!==4){dx=0;targetZoom=1;targetTx=0;targetTy=0;}
+  if(p===0){SCAN_HITS.forEach(h=>{delete h.revealed;delete h.flashT;});scanData.length=0;scanT=0;}
+  uiUpd();
+}
+
+function rst(){
+  p=0;fe=0;rr=18.2;da=0;dx=0;sx=90;scanT=0;scanData.length=0;
+  zoom=1;zoomTx=0;zoomTy=0;targetZoom=1;targetTx=0;targetTy=0;
+  SCAN_HITS.forEach(h=>{delete h.revealed;delete h.flashT;});uiUpd();
+}
+
+document.getElementById('pb').addEventListener('click',()=>go(-1));
+document.getElementById('nb').addEventListener('click',()=>go(1));
+document.getElementById('rb').addEventListener('click',rst);
+document.getElementById('ov').addEventListener('change',e=>ov=e.target.checked);
+uiUpd();tlUpd();loop();
+})();
+</script>
+</body>
+</html>
